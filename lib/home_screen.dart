@@ -64,6 +64,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  String _formatLocalTime(int epochTime) {
+    DateTime utcTime =
+        DateTime.fromMillisecondsSinceEpoch(epochTime * 1000, isUtc: true);
+    DateTime localTime = utcTime.toLocal();
+    return '${localTime.hour.toString().padLeft(2, '0')}:00';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.lightBlueAccent, Colors.blue],
+            colors: [Colors.lightBlueAccent, Colors.greenAccent],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -98,41 +105,31 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (weather != null)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        _getWeatherIcon(weather!.current.condition.text),
-                        size: 120,
-                        color: Colors.amber,
+                Column(
+                  children: [
+                    Icon(
+                      _getWeatherIcon(weather!.current.condition.text),
+                      size: 120,
+                      color: Colors.amber,
+                    ),
+                    Text(
+                      '${weather!.location.name}, ${weather!.location.country}',
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
-                      const SizedBox(height: 20),
-                      Text(
-                        '${weather!.location.name}, ${weather!.location.country}',
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                    ),
+                    Text(
+                      '${weather!.current.tempC}°C, ${weather!.current.condition.text}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        color: Colors.black87,
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        '${weather!.current.tempC}°C, ${weather!.current.condition.text}',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               if (errorMessage.isNotEmpty)
                 Text(
@@ -140,6 +137,85 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: const TextStyle(color: Colors.red, fontSize: 16),
                 ),
               const SizedBox(height: 20),
+              if (weather != null)
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Next 3 Hours Forecast:',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        height: 150,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: weather!.forecast.forecastday[0].hour
+                              .where((hour) =>
+                                  DateTime.fromMillisecondsSinceEpoch(
+                                          hour.timeEpoch * 1000,
+                                          isUtc: true)
+                                      .toLocal()
+                                      .isAfter(DateTime.now()))
+                              .take(3)
+                              .map((hour) => Container(
+                                    margin: const EdgeInsets.all(8),
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                      color: Colors.white.withOpacity(0.2),
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          _getWeatherIcon(hour.condition.text),
+                                          size: 40,
+                                          color: Colors.amber,
+                                        ),
+                                        Text(
+                                          _formatLocalTime(hour.timeEpoch),
+                                          style: const TextStyle(
+                                            color: Colors.black87,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${hour.tempC}°C',
+                                          style: const TextStyle(
+                                            color: Colors.black87,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        Text(
+                                          hour.condition.text,
+                                          style: const TextStyle(
+                                            color: Colors.black87,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Rain: ${hour.chanceOfRain}%',
+                                          style: const TextStyle(
+                                            color: Colors.black45,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ))
+                              .toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               TextField(
                 controller: _controller,
                 decoration: InputDecoration(
@@ -158,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderSide: const BorderSide(color: Colors.white),
                   ),
                 ),
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.black),
               ),
               const SizedBox(height: 10),
               ElevatedButton(
